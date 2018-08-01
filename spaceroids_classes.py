@@ -10,9 +10,12 @@ class Cenario(object):
         self.player1 = Player(50, 420, 64, 64, "Nave 1 Left.png", "Nave 1 Right.png", "Nave 1.png")
         self.player2 = Player(500, 420, 64, 64, "Nave 2 Left.png", "Nave 2 Right.png", "Nave 2.png")
         self.bullets = []
+        self.bullets_player2 = []
         self.asteroids = []
         self.asteroid_time = 600
         self.bulletSound = pygame.mixer.Sound('bullet.wav')
+        self.img_lives1 = pygame.image.load("Nave 1.png")
+        self.img_lives2 = pygame.image.load("Nave 2.png")
 
         self.music = pygame.mixer.music.load('music.mp3')
         pygame.mixer.music.play(-1)
@@ -22,39 +25,72 @@ class Cenario(object):
     def restart(self):
         self.player1.score = 0
         self.player2.score = 0
-        self.player1.lives = 1
-        self.player2.lives = 1
+        self.player1.lives = 3
+        self.player2.lives = 3
         self.player1.tempo_asteroid = 0
         self.player2.tempo_asteroid = 0
         self.asteroids = []
 
-    def produce_shoot(self, player):
+    def produce_shoot_player1(self, player):
         if player.can_shoot() and len(self.bullets) < 4:
             bullet = Projetil(player, 4, (0, 255, 0))
             self.bullets.append(bullet)
+            self.bulletSound.play()
+
+    def produce_shoot_player2(self, player):
+        if player.can_shoot() and len(self.bullets_player2) < 4:
+            bullet = Projetil(player, 4, (0, 255, 0))
+            self.bullets_player2.append(bullet)
             self.bulletSound.play()
 
     #Drawing on screen stuff
     def draw(self, scr):
         scr.blit(self.image_background, (0, 0)) #background
 
-        #player draw bullet
-        for bullet in self.bullets:
-            bullet.draw(scr)
-
-        #player asteroids draw
-        for asteroid in self.asteroids:
-            asteroid.draw(scr)
-
-        #players draw
-        self.player1.draw(scr)
-        self.player2.draw(scr)
-
+        #set pontos font
         img_pontos1 = self.font.render("Pontos : "+ str(self.player1.score), True, (255, 255, 0))
         img_pontos2 = self.font.render("Pontos : " + str(self.player2.score), True, (255, 255, 0))
 
+
+        #player 1 img_lives
+        if self.player1.lives > 0:
+            scr.blit (self.img_lives1, (35, -5))
+
+        if self.player1.lives > 1:
+            scr.blit (self.img_lives1, (75, -5))
+
+        if self.player1.lives > 2:
+            scr.blit (self.img_lives1, (115, -5))
+
+        #player 2 img_lives
+        if self.player2.lives > 0:
+            scr.blit(self.img_lives2, (425, -3))
+
+        if self.player2.lives > 1:
+            scr.blit(self.img_lives2, (475, -3))
+
+        if self.player2.lives > 2:
+            scr.blit(self.img_lives2, (525, -3))
+
+        #draw pontos
         scr.blit(img_pontos1, (50, 50))
         scr.blit(img_pontos2, (450, 50))
+
+        # player1 draw bullet
+        for bullet in self.bullets:
+            bullet.draw(scr)
+
+        # player2 draw bullet
+        for bullet in self.bullets_player2:
+            bullet.draw(scr)
+
+        # player asteroids draw
+        for asteroid in self.asteroids:
+            asteroid.draw(scr)
+
+        # players draw
+        self.player1.draw(scr)
+        self.player2.draw(scr)
 
     def update(self):
         # player updates
@@ -79,6 +115,13 @@ class Cenario(object):
             else:
                 self.bullets.pop(self.bullets.index(bullet))
 
+        # player2 bullets
+        for bullet in self.bullets_player2:
+            if bullet.y > 0:
+                bullet.y -= bullet.vel
+            else:
+                self.bullets_player2.pop(self.bullets_player2.index(bullet))
+
         #asteroids players
         for asteroid in self.asteroids:
             if asteroid.y < 480:
@@ -96,6 +139,18 @@ class Cenario(object):
                 if d < (asteroid.raio + bullet.raio):
                     self.asteroids.pop(self.asteroids.index(asteroid))
                     self.bullets.pop(self.bullets.index(bullet))
+                    asteroid.owner.score += 1
+
+
+        #asteroids player 2 collision
+        for asteroid in self.asteroids:
+            for bullet in self.bullets_player2:
+                dx = abs(bullet.x - asteroid.x)
+                dy = abs(bullet.y - asteroid.y)
+                d = sqrt((dx ** 2) + (dy ** 2) // 1)
+                if d < (asteroid.raio + bullet.raio):
+                    self.asteroids.pop(self.asteroids.index(asteroid))
+                    self.bullets_player2.pop(self.bullets_player2.index(bullet))
                     asteroid.owner.score += 1
 
         if self.player1.tempo_asteroid > 30 and self.player1.lives > 0:
@@ -116,13 +171,13 @@ class Cenario(object):
             elif evento.key == K_d:
                 self.player1.move(6)
             elif evento.key == K_w:
-                self.produce_shoot(self.player1)
+                self.produce_shoot_player1(self.player1)
             elif evento.key == K_LEFT:
                 self.player2.move(-6)
             elif evento.key == K_RIGHT:
                 self.player2.move(6)
             elif evento.key == K_UP:
-                self.produce_shoot(self.player2)
+                self.produce_shoot_player2(self.player2)
 
         elif evento.type == KEYUP:
             if evento.key == K_a:
@@ -141,9 +196,9 @@ class Cenario(object):
                 self.player2.move(evento.value * 6)
         elif evento.type == JOYBUTTONDOWN:
             if evento.joy == 0 and evento.button == 1:
-                self.produce_shoot(self.player1)
+                self.produce_shoot_player1(self.player1)
             elif evento.joy == 1 and evento.button == 1:
-                self.produce_shoot(self.player2)
+                self.produce_shoot_player2(self.player2)
 
 				
 class Player(object):
@@ -153,7 +208,7 @@ class Player(object):
         self.tempo_recarga = 0
         self.tempo_asteroid = 0
         self.score = 0
-        self.lives = 1
+        self.lives = 3
         self.img_right = pygame.image.load(img_right)
         self.img_left = pygame.image.load(img_left)
         self.img_center = pygame.image.load(img_center)
