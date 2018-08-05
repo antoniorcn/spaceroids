@@ -4,23 +4,37 @@ from pygame.locals import JOYAXISMOTION, JOYBUTTONDOWN
 from math import sqrt
 from random import randint
 
+class FabricaImagens(object):
+    def __init__(self, style):
+        self.style = style
+
+    def get_image(self, nome, tipo):
+        image_name = nome + "_" + self.style + "." + tipo
+        print("Carregando a imagem : ", image_name)
+        img = pygame.image.load(image_name)
+        return img
+
+    def get_style(self):
+        return self.style
+
+
 class Cenario(object):
-    def __init__(self):
+    def __init__(self, font, image_factory):
         self.image_background = pygame.image.load('bg.jpg')
-        self.player1 = Player(50, 420, 64, 64, "Nave 1 Left.png", "Nave 1 Right.png", "Nave 1.png")
-        self.player2 = Player(500, 420, 64, 64, "Nave 2 Left.png", "Nave 2 Right.png", "Nave 2.png")
+        self.image_factory = image_factory
         self.bullets = []
         self.bullets_player2 = []
         self.asteroids = []
         self.asteroid_time = 600
-        self.bulletSound = pygame.mixer.Sound('bullet.wav')
-        self.img_lives1 = pygame.image.load("Nave 1.png")
-        self.img_lives2 = pygame.image.load("Nave 2.png")
-
+        self.player1 = Player(50, 420, 64, 64, image_factory.get_image("Nave 1 Left", "png"), image_factory.get_image("Nave 1 Right", "png"), image_factory.get_image("Nave 1", "png"))
+        self.player2 = Player(500, 420, 64, 64, image_factory.get_image("Nave 2 Left", "png"), image_factory.get_image("Nave 2 Right", "png"), image_factory.get_image("Nave 2", "png"))
+        self.img_lives1 = image_factory.get_image("Nave 1", "png")
+        self.img_lives2 = image_factory.get_image("Nave 2", "png")
         self.music = pygame.mixer.music.load('music.mp3')
         pygame.mixer.music.play(-1)
+        self.bulletSound = pygame.mixer.Sound('bullet.wav')
+        self.font = font
 
-        self.font = pygame.font.SysFont("Arial", 32, False, False)
 
     def restart(self):
         self.player1.score = 0
@@ -31,17 +45,18 @@ class Cenario(object):
         self.player2.tempo_asteroid = 0
         self.asteroids = []
 
-    def produce_shoot_player1(self, player):
+    def produce_shoot_player1(self, player, image_factory):
         if player.can_shoot() and len(self.bullets) < 4:
-            bullet = Projetil(player, 4, (0, 255, 0))
+            bullet = Projetil(player, 4, image_factory.get_image("tiro1", "png"))
             self.bullets.append(bullet)
             self.bulletSound.play()
 
-    def produce_shoot_player2(self, player):
+    def produce_shoot_player2(self, player, image_factory):
         if player.can_shoot() and len(self.bullets_player2) < 4:
-            bullet = Projetil(player, 4, (0, 255, 0))
-            self.bullets_player2.append(bullet)
             self.bulletSound.play()
+            bullet = Projetil(player, 4, image_factory.get_image("tiro2", "png"))
+            self.bullets_player2.append(bullet)
+
 
     #Drawing on screen stuff
     def draw(self, scr):
@@ -50,7 +65,6 @@ class Cenario(object):
         #set pontos font
         img_pontos1 = self.font.render("Pontos : "+ str(self.player1.score), True, (255, 255, 0))
         img_pontos2 = self.font.render("Pontos : " + str(self.player2.score), True, (255, 255, 0))
-
 
         #player 1 img_lives
         if self.player1.lives > 0:
@@ -155,12 +169,12 @@ class Cenario(object):
 
         if self.player1.tempo_asteroid > 30 and self.player1.lives > 0:
             if len(self.asteroids) < 10:
-                self.asteroids.append(Enemy(self.player1, randint(40, 280), 0, 20,  (0, 255, 255)))
+                self.asteroids.append(Enemy(self.player1, randint(40, 280), 0, 20,  (0, 255, 255), self.image_factory))
                 self.player1.tempo_asteroid = 0
 
         if self.player2.tempo_asteroid > 30 and self.player2.lives > 0:
             if len(self.asteroids) < 10:
-                self.asteroids.append(Enemy(self.player2, randint(360, 600), 0, 20,  (255, 0, 255)))
+                self.asteroids.append(Enemy(self.player2, randint(360, 600), 0, 20,  (255, 0, 255), self.image_factory))
                 self.player2.tempo_asteroid = 0
 
 
@@ -171,13 +185,13 @@ class Cenario(object):
             elif evento.key == K_d:
                 self.player1.move(6)
             elif evento.key == K_w:
-                self.produce_shoot_player1(self.player1)
+                self.produce_shoot_player1(self.player1, self.image_factory)
             elif evento.key == K_LEFT:
                 self.player2.move(-6)
             elif evento.key == K_RIGHT:
                 self.player2.move(6)
             elif evento.key == K_UP:
-                self.produce_shoot_player2(self.player2)
+                self.produce_shoot_player2(self.player2, self.image_factory)
 
         elif evento.type == KEYUP:
             if evento.key == K_a:
@@ -196,9 +210,9 @@ class Cenario(object):
                 self.player2.move(evento.value * 6)
         elif evento.type == JOYBUTTONDOWN:
             if evento.joy == 0 and evento.button == 1:
-                self.produce_shoot_player1(self.player1)
+                self.produce_shoot_player1(self.player1, self.image_factory)
             elif evento.joy == 1 and evento.button == 1:
-                self.produce_shoot_player2(self.player2)
+                self.produce_shoot_player2(self.player2, self.image_factory)
 
 				
 class Player(object):
@@ -209,9 +223,9 @@ class Player(object):
         self.tempo_asteroid = 0
         self.score = 0
         self.lives = 3
-        self.img_right = pygame.image.load(img_right)
-        self.img_left = pygame.image.load(img_left)
-        self.img_center = pygame.image.load(img_center)
+        self.img_right = img_right
+        self.img_left = img_left
+        self.img_center = img_center
         self.image = self.img_center
 
     def draw(self, scr):
@@ -243,12 +257,12 @@ class Player(object):
 
 
 class Enemy (object):
-    #asteroide1 = [pygame.image.load('')]
-    #asteroide2 = [pygame.image.load('')]
 
-    def __init__(self, player_origem, x, y, raio, cor):
+    def __init__(self, player_origem, x, y, raio, cor, image_factory):
+        self.image_factory = image_factory
         self.owner = player_origem
-        self.ast = pygame.image.load('asteroid.png')
+        self.ast = image_factory.get_image("asteroid", "png")
+        #self.ast = pygame.transform.rotate(img, randint(0, 360))
         self.x = x
         self.y = y
         self.raio = raio
@@ -265,14 +279,15 @@ class Enemy (object):
 
 
 class Projetil(object):
-    def __init__(self, player_origem, raio, cor):
+    def __init__(self, player_origem, raio, img_tiro):
         self.owner = player_origem
         self.x = self.owner.rect.x + round(self.owner.rect.w / 2)
         self.y = self.owner.rect.y
         self.raio = raio
-        self.cor = cor
+        #self.cor = cor
         self.vel = 8
+        self.img_tiro = img_tiro
 
     def draw(self, scr):
-        pygame.draw.circle(scr, self.cor, (self.x, self.y), self.raio)
-       # pygame.blit(tiro, (self.x, self.y))
+        #pygame.draw.circle(scr, self.cor, (self.x, self.y), self.raio)
+        scr.blit(self.img_tiro, (self.x - 4, self.y))
