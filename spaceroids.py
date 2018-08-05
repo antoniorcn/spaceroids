@@ -97,9 +97,13 @@ def menu_processa_evento( ev ):
         if menu_selected_item >= len(menu):
             menu_selected_item = len(menu) - 1
 
+def musica():
+    global music_menu
+    if estado == "menu":
+        music_menu = pygame.mixer.music.load ("menu_music.mp3")
+        pygame.mixer.music.play(-1)
 
-
-
+musica()
 
 while run:
 
@@ -132,6 +136,7 @@ while run:
             elif e.key == K_p:
                 cenario.restart()
                 estado = "menu"
+                musica()
         if e.type == JOYBUTTONDOWN:
             if e.joy == 0 and e.button == 4:
                 cenario.restart()

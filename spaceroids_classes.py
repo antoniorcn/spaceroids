@@ -28,10 +28,10 @@ class Cenario(object):
         self.asteroid_time = 600
         self.player1 = Player(50, 420, 64, 64, image_factory.get_image("Nave 1 Left", "png"), image_factory.get_image("Nave 1 Right", "png"), image_factory.get_image("Nave 1", "png"))
         self.player2 = Player(500, 420, 64, 64, image_factory.get_image("Nave 2 Left", "png"), image_factory.get_image("Nave 2 Right", "png"), image_factory.get_image("Nave 2", "png"))
-        self.img_lives1 = image_factory.get_image("Nave 1", "png")
-        self.img_lives2 = image_factory.get_image("Nave 2", "png")
         self.music = pygame.mixer.music.load('music.mp3')
         pygame.mixer.music.play(-1)
+        self.img_lives1 = image_factory.get_image("Nave 1", "png")
+        self.img_lives2 = image_factory.get_image("Nave 2", "png")
         self.bulletSound = pygame.mixer.Sound('bullet.wav')
         self.font = font
 
